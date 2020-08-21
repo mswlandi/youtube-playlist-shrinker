@@ -16,8 +16,8 @@ def editDefaultProgramParameterValue(parameter, value):
         programFile.write('\n'.join(newProgramLines))
 
 
-s = '7'
-v = '1.4'
+s = '10'
+v = '1'
 m = '2'
 parameters = sys.argv[1:]
 
@@ -67,6 +67,6 @@ folder = [p for p in os.listdir() if os.path.isdir(p) and p not in currentDirs][
 for video in os.listdir(folder):
     videoName = '.'.join(video.split('.')[:-1])
     print(f'\nShrinking {videoName}:\n')
-    os.system(f'auto-editor "{folder}/{video}" {arguments} --no_open -o "_{folder}/{video}"')
+    os.system(f'auto-editor "{folder}/{video}" {arguments} --no_open -o "{folder}/_{video}"')
     os.remove(f'{folder}/{video}')
-    os.rename(f'_{folder}/{video}', f'{folder}/{video}')
+    os.rename(f'{folder}/_{video}', f'{folder}/{video}')
