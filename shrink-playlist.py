@@ -15,20 +15,20 @@ def editDefaultProgramParameterValue(parameter, value):
                 newProgramLines.append(line)
         programFile.write('\n'.join(newProgramLines))
 
+
+s = '7'
+v = '1.4'
+m = '2'
+parameters = sys.argv[1:]
+
 try:
-    l = sys.argv[1]
-    opts, args = getopt.getopt(sys.argv[2:],"hv:s:m:",["sounded_speed=", "silent_speed=", "margin="])
-    s = '7'
-    v = '1.4'
-    m = '2'
+    opts, args = getopt.getopt(parameters[1:],"hv:s:m:",["sounded_speed=", "silent_speed=", "margin="])
+    l = parameters[0]
 except:
     try:
-        parameters = input('Parameters: ')
-        l = parameters.split(' ')[0]
-        opts, args = getopt.getopt(parameters.split(' ')[1:],"hv:s:m:",["sounded_speed=", "silent_speed=", "margin="])
-        s = '7'
-        v = '1.4'
-        m = '2'
+        parameters = input('Parameters: ').split(' ')
+        opts, args = getopt.getopt(parameters[1:],"hv:s:m:",["sounded_speed=", "silent_speed=", "margin="])
+        l = parameters[0]
     except:
         print('shrink-playlist.py <inputfile> -v <sounded speed> -s <silent speed> -m <margin>')
         sys.exit(2)
