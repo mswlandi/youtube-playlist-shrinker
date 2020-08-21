@@ -20,6 +20,7 @@ s = '10'
 v = '1'
 m = '2'
 parameters = sys.argv[1:]
+processedFolder = "processed"
 
 try:
     opts, args = getopt.getopt(parameters[1:],"hv:s:m:",["sounded_speed=", "silent_speed=", "margin="])
@@ -54,19 +55,22 @@ arguments = f'-v {v} -s {s} -m {m}'
 # YouTube updated their HTML so the regex that Playlist uses to find the videos is currently outdated
 playlist._video_regex = re.compile(r"\"url\":\"(/watch\?v=[\w-]*)")
 
-currentDirs = [p for p in os.listdir() if os.path.isdir(p)]
+if not os.path.exists(f'{processedFolder}'):
+    os.makedirs(f'{processedFolder}')
+currentDirs = [p for p in os.listdir(f"{processedFolder}") if os.path.isdir(f"{processedFolder}/{p}")]
+print(currentDirs)
 
 print(f'\nDownloading {len(playlist.video_urls)} videos from {playlist.title()}:\n')
 for url in playlist.video_urls:
     print(url)
     video = YouTube(url)
-    video.streams.get_highest_resolution().download(playlist.title())
+    video.streams.get_highest_resolution().download(f"{processedFolder}/{playlist.title()}")
 
-folder = [p for p in os.listdir() if os.path.isdir(p) and p not in currentDirs][0]
+folder = [p for p in os.listdir(f"{processedFolder}") if os.path.isdir(f"{processedFolder}/{p}") and p not in currentDirs][0]
 
-for video in os.listdir(folder):
+for video in os.listdir(f"{processedFolder}/{folder}"):
     videoName = '.'.join(video.split('.')[:-1])
     print(f'\nShrinking {videoName}:\n')
-    os.system(f'auto-editor "{folder}/{video}" {arguments} --no_open -o "{folder}/_{video}"')
-    os.remove(f'{folder}/{video}')
-    os.rename(f'{folder}/_{video}', f'{folder}/{video}')
+    os.system(f'auto-editor "{processedFolder}/{folder}/{video}" {arguments} --no_open -o "{processedFolder}/{folder}/_{video}"')
+    os.remove(f'{processedFolder}/{folder}/{video}')
+    os.rename(f'{processedFolder}/{folder}/_{video}', f'{processedFolder}/{folder}/{video}')
