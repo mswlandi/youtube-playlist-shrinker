@@ -105,10 +105,10 @@ if 'playlist?' not in l:
             os.rename(o+'temp/'+video, o+video)
         else:
             sys.exit(3)
+    os.rmdir(o+'temp/')
     videoName = '.'.join(video.split('.')[:-1])
     print(f'\nShrinking: \n{videoName}\n')
     shrinkVideo(o, video, arguments, False)
-    os.rmdir(o+'temp/')
     sys.exit(0)
 
 playlist = Playlist(l)
