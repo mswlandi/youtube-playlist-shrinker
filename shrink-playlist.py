@@ -18,6 +18,14 @@ def editDefaultProgramParameterValue(parameter, value):
                 newProgramLines.append(line)
         programFile.write('\n'.join(newProgramLines))
 
+def askForOverwrite(file):
+    while True:
+        command = input(f'Overwrite file {video}? (Y/N)\n')
+        if command.lower() in ['y','yes']:
+            return True
+        elif command.lower() in ['n','no']:
+            return False
+
 def isFirstSubsetOfSecond(first, second):
     positionInFirst = 0
     for letter in second:
@@ -25,17 +33,20 @@ def isFirstSubsetOfSecond(first, second):
             positionInFirst += 1
     return positionInFirst == len(first)
 
-def downloadVideo(o, playlist, url):
+def downloadVideo(o, url):
     while True:
         try:
             video = YouTube(url)
-            video.streams.get_highest_resolution().download(f'{o}/{playlist.title()}')
+            video.streams.get_highest_resolution().download(o)
             break
         except:
             continue
 
-def shrinkVideo(o, video, arguments):
-    os.system(f'auto-editor "{o}/{video}" {arguments} --no_open -o "{o}/_{video}"')
+def shrinkVideo(o, video, arguments, muted):
+    if muted:
+        subprocess.run(f'auto-editor "{o}/{video}" {arguments} --no_open -o "{o}/_{video}"', stdout=subprocess.PIPE)
+    else:
+        subprocess.run(f'auto-editor "{o}/{video}" {arguments} --no_open -o "{o}/_{video}"')
     os.remove(f'{o}/{video}')
     os.rename(f'{o}/_{video}', f'{o}/{video}')
 
@@ -75,9 +86,31 @@ for opt, arg in opts:
         t = arg
         editDefaultProgramParameterValue('t', t)
 
-playlist = Playlist(l)
-
 arguments = f'-v {v} -s {s} -m {m}'
+
+if 'playlist?' not in l:
+    if os.path.exists(o+'temp/'):
+        for video in os.listdir(o+'temp/'):
+            os.remove(o+'temp/'+video)
+        os.rmdir(o+'temp/')
+    os.makedirs(o+'temp/')
+    print(f'\nDownloading: \n{l}\n')
+    downloadVideo(o+'temp/', l)
+    video = os.listdir(o+'temp/')[0]
+    try:
+        os.rename(o+'temp/'+video, o+video)
+    except:
+        if askForOverwrite(video):
+            os.remove(o+video)
+            os.rename(o+'temp/'+video, o+video)
+        else:
+            sys.exit(3)
+    videoName = '.'.join(video.split('.')[:-1])
+    print(f'\nShrinking: \n{videoName}\n')
+    shrinkVideo(o, video, arguments, False)
+    sys.exit(0)
+
+playlist = Playlist(l)
 
 # YouTube updated their HTML so the regex that Playlist uses to find the videos is currently outdated
 playlist._video_regex = re.compile(r'\"url\":\"(/watch\?v=[\w-]*)')
@@ -92,7 +125,7 @@ for index in range(0, len(playlist.video_urls), int(t)):
     videoURLs = '\n'.join(playlist.video_urls[index:index+int(t)])
     print(f'\nDownloading: \n{videoURLs}\n')
     for videoURL in playlist.video_urls[index:index+int(t)]:
-        threads.append(threading.Thread(target=downloadVideo, args=(o, playlist, videoURL)))
+        threads.append(threading.Thread(target=downloadVideo, args=(f'{o}/{playlist.title()}', videoURL)))
         threads[-1].start()
     for thread in threads:
         thread.join()
@@ -105,7 +138,7 @@ for index in range(0, len(videos), int(t)):
     videoNames = '\n'.join(['.'.join(video.split('.')[:-1]) for video in videos[index:index+int(t)]])
     print(f'\nShrinking: \n{videoNames}\n')
     for video in videos[index:index+int(t)]:
-        threads.append(threading.Thread(target=shrinkVideo, args=(o, video, arguments)))
+        threads.append(threading.Thread(target=shrinkVideo, args=(o, video, arguments, int(t) != 1)))
         threads[-1].start()
     for thread in threads:
         thread.join()
