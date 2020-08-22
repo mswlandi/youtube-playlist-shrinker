@@ -9,8 +9,8 @@ def editDefaultProgramParameterValue(parameter, value):
     with open(__file__, 'w') as programFile:
         newProgramLines = []
         for line in programLines:
-            if ' ' + parameter + ' = \'' in line:
-                newProgramLines.append(line.split('=')[0] + '= \'' + value + '\'')
+            if line.startswith(parameter + ' = \''):
+                newProgramLines.append(parameter + ' = \'' + value + '\'')
             else:
                 newProgramLines.append(line)
         programFile.write('\n'.join(newProgramLines))
