@@ -7,7 +7,6 @@ def editDefaultProgramParameterValue(parameter, value):
     programLines = open(__file__).read().split('\n')
     with open(__file__, 'w') as programFile:
         newProgramLines = []
-        print(__file__)
         for line in programLines:
             if parameter + ' = \'' in line:
                 newProgramLines.append(line.split('=')[0] + '= \'' + value + '\'')
@@ -15,36 +14,43 @@ def editDefaultProgramParameterValue(parameter, value):
                 newProgramLines.append(line)
         programFile.write('\n'.join(newProgramLines))
 
+def isFirstSubsetOfSecond(first, second):
+    positionInFirst = 0
+    for letter in second:
+        if letter == first[positionInFirst]:
+            positionInFirst += 1
+    return positionInFirst == len(first)
 
-s = '10'
-v = '1'
+
+o = './processed/'
+s = '7'
+v = '1.4'
 m = '2'
 parameters = sys.argv[1:]
-processedFolder = "processed"
 
 try:
-    opts, args = getopt.getopt(parameters[1:],"hv:s:m:",["sounded_speed=", "silent_speed=", "margin="])
+    opts, args = getopt.getopt(parameters[1:],'hv:s:m:',['sounded_speed=', 'silent_speed=', 'margin='])
     l = parameters[0]
 except:
     try:
         parameters = input('Parameters: ').split(' ')
-        opts, args = getopt.getopt(parameters[1:],"hv:s:m:",["sounded_speed=", "silent_speed=", "margin="])
+        opts, args = getopt.getopt(parameters[1:],'hv:s:m:',['sounded_speed=', 'silent_speed=', 'margin='])
         l = parameters[0]
     except:
-        print('shrink-playlist.py <inputfile> -v <sounded speed> -s <silent speed> -m <margin>')
+        print('shrink-playlist.py <inputfile> [-v <sounded speed>] [-s <silent speed>] [-m <margin>]')
         sys.exit(2)
 
 for opt, arg in opts:
     if opt == '-h':
-        print('shrink-playlist.py <inputfile> -v <sounded speed> -s <silent speed> -m <margin>')
+        print('shrink-playlist.py <inputfile> [-v <sounded speed>] [-s <silent speed>] [-m <margin>]')
         sys.exit()
-    elif opt in ("-v", "--sounded_speed"):
+    elif opt in ('-v', '--sounded_speed'):
         v = arg
         editDefaultProgramParameterValue('v', v)
-    elif opt in ("-s", "--silent_speed"):
+    elif opt in ('-s', '--silent_speed'):
         s = arg
         editDefaultProgramParameterValue('s', s)
-    elif opt in ("-m", "--margin"):
+    elif opt in ('-m', '--margin'):
         m = arg
         editDefaultProgramParameterValue('m', m)
 
@@ -53,24 +59,27 @@ playlist = Playlist(l)
 arguments = f'-v {v} -s {s} -m {m}'
 
 # YouTube updated their HTML so the regex that Playlist uses to find the videos is currently outdated
-playlist._video_regex = re.compile(r"\"url\":\"(/watch\?v=[\w-]*)")
+playlist._video_regex = re.compile(r'\"url\":\"(/watch\?v=[\w-]*)')
 
-if not os.path.exists(f'{processedFolder}'):
-    os.makedirs(f'{processedFolder}')
-currentDirs = [p for p in os.listdir(f"{processedFolder}") if os.path.isdir(f"{processedFolder}/{p}")]
-print(currentDirs)
+if not os.path.exists(f'{o}'):
+    os.makedirs(f'{o}')
 
 print(f'\nDownloading {len(playlist.video_urls)} videos from {playlist.title()}:\n')
 for url in playlist.video_urls:
     print(url)
-    video = YouTube(url)
-    video.streams.get_highest_resolution().download(f"{processedFolder}/{playlist.title()}")
+    while True:
+        try:
+            video = YouTube(url)
+            video.streams.get_highest_resolution().download(f'{o}/{playlist.title()}')
+            break
+        except:
+            continue
 
-folder = [p for p in os.listdir(f"{processedFolder}") if os.path.isdir(f"{processedFolder}/{p}") and p not in currentDirs][0]
+o += sorted([p for p in os.listdir(f'{o}') if os.path.isdir(o+p) and isFirstSubsetOfSecond(p, playlist.title())], key=lambda p: -len(p))[0]
 
-for video in os.listdir(f"{processedFolder}/{folder}"):
+for video in os.listdir(f'{o}'):
     videoName = '.'.join(video.split('.')[:-1])
     print(f'\nShrinking {videoName}:\n')
-    os.system(f'auto-editor "{processedFolder}/{folder}/{video}" {arguments} --no_open -o "{processedFolder}/{folder}/_{video}"')
-    os.remove(f'{processedFolder}/{folder}/{video}')
-    os.rename(f'{processedFolder}/{folder}/_{video}', f'{processedFolder}/{folder}/{video}')
+    os.system(f'auto-editor "{o}/{video}" {arguments} --no_open -o "{o}/_{video}"')
+    os.remove(f'{o}/{video}')
+    os.rename(f'{o}/_{video}', f'{o}/{video}')
