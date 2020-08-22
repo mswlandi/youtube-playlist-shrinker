@@ -1,5 +1,5 @@
 import subprocess
-subprocess.run('pip3 install -U auto-editor')
+subprocess.run('pip3 install -U auto-editor', stdout=subprocess.PIPE)
 
 from pytube import Playlist, YouTube
 import re
