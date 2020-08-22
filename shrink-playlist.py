@@ -104,6 +104,8 @@ if 'playlist?' not in l:
             os.remove(o+video)
             os.rename(o+'temp/'+video, o+video)
         else:
+            os.remove(o+'temp/'+video)
+            os.rmdir(o+'temp/')
             sys.exit(3)
     os.rmdir(o+'temp/')
     videoName = '.'.join(video.split('.')[:-1])
