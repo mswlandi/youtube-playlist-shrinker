@@ -1,5 +1,5 @@
 import subprocess
-subprocess.run('pip3 install -U auto-editor', stdout=subprocess.PIPE)
+subprocess.run('pip3 install -U auto-editor', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 from pytube import Playlist, YouTube
 import re
@@ -44,7 +44,7 @@ def downloadVideo(o, url):
 
 def shrinkVideo(o, video, arguments, muted):
     if muted:
-        subprocess.run(f'auto-editor "{o}/{video}" {arguments} --no_open -o "{o}/_{video}"', stdout=subprocess.PIPE)
+        subprocess.run(f'auto-editor "{o}/{video}" {arguments} --no_open -o "{o}/_{video}"', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     else:
         subprocess.run(f'auto-editor "{o}/{video}" {arguments} --no_open -o "{o}/_{video}"')
     os.remove(f'{o}/{video}')
@@ -52,8 +52,8 @@ def shrinkVideo(o, video, arguments, muted):
 
 o = './processed/'
 s = '10'
-v = '2.5'
-m = '2'
+v = '1'
+m = '6'
 t = '8'
 parameters = sys.argv[1:]
 
