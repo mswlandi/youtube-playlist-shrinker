@@ -1,5 +1,6 @@
 import subprocess
-subprocess.run('pip3 install -U auto-editor', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+subprocess.run('pip3 uninstall -y auto-editor', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+subprocess.run('pip3 install -U auto-editor==20.33.1.0', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 from pytube import Playlist, YouTube
 import re
@@ -51,10 +52,10 @@ def shrinkVideo(o, video, arguments, muted):
     os.rename(f'{o}/_{video}', f'{o}/{video}')
 
 o = './processed/'
-s = '10'
-v = '1'
+v = '1.5'
+s = '15'
 m = '6'
-t = '8'
+t = '4'
 parameters = sys.argv[1:]
 
 try:
