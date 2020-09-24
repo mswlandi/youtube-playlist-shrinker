@@ -1,11 +1,8 @@
-import subprocess
-subprocess.run('pip3 uninstall -y auto-editor', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-subprocess.run('pip3 install -U auto-editor==20.33.1.0', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
 from pytube import Playlist, YouTube
 import re
 import os
 import sys, getopt
+import subprocess
 import threading
 
 def editDefaultProgramParameterValue(parameter, value):
@@ -52,10 +49,10 @@ def shrinkVideo(o, video, arguments, muted):
     os.rename(f'{o}/_{video}', f'{o}/{video}')
 
 o = './processed/'
-v = '1.5'
-s = '15'
+v = '2.2'
+s = '22'
 m = '6'
-t = '4'
+t = '1'
 parameters = sys.argv[1:]
 
 try:
