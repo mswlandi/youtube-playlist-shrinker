@@ -4,17 +4,21 @@ import os
 import sys, getopt
 import subprocess
 import threading
+import json
 
-def editDefaultProgramParameterValue(parameter, value):
-    programLines = open(__file__).read().split('\n')
-    with open(__file__, 'w') as programFile:
-        newProgramLines = []
-        for line in programLines:
-            if line.startswith(parameter + ' = \''):
-                newProgramLines.append(parameter + ' = \'' + value + '\'')
-            else:
-                newProgramLines.append(line)
-        programFile.write('\n'.join(newProgramLines))
+def load(filename):
+    try:
+        dataFile = open(filename + '.json', 'r')
+        data = json.loads(dataFile.read())
+        dataFile.close()
+        return data
+    except:
+        return None
+
+def save(filename, data):
+    dataFile = open(filename + '.json', 'w')
+    dataFile.write(json.dumps(data))
+    dataFile.close()
 
 def askForOverwrite(file):
     while True:
@@ -48,43 +52,50 @@ def shrinkVideo(o, video, arguments, muted):
     os.remove(f'{o}/{video}')
     os.rename(f'{o}/_{video}', f'{o}/{video}')
 
-o = './processed/'
-v = '2.2'
-s = '22'
-m = '6'
-t = '1'
+try:
+    o, v, s, m, t = load('config')
+except:
+    o, v, s, m, t = ('./processed/', '1.5', '15', '6', '4')
+
 parameters = sys.argv[1:]
 
-try:
-    opts, args = getopt.getopt(parameters[1:],'hv:s:m:t:',['sounded_speed=', 'silent_speed=', 'margin=', 'threads='])
+if len(parameters) > 0:
     l = parameters[0]
-except:
     try:
-        parameters = input('Parameters: ').split(' ')
         opts, args = getopt.getopt(parameters[1:],'hv:s:m:t:',['sounded_speed=', 'silent_speed=', 'margin=', 'threads='])
-        l = parameters[0]
     except:
         print('shrink-playlist.py <inputfile> [-v <sounded speed>] [-s <silent speed>] [-m <margin>] [-t <number of threads>]')
         sys.exit(2)
 
-for opt, arg in opts:
-    if opt == '-h':
-        print('shrink-playlist.py <inputfile> [-v <sounded speed>] [-s <silent speed>] [-m <margin>] [-t <number of threads>]')
-        sys.exit()
-    elif opt in ('-v', '--sounded_speed'):
-        v = arg
-        editDefaultProgramParameterValue('v', v)
-    elif opt in ('-s', '--silent_speed'):
-        s = arg
-        editDefaultProgramParameterValue('s', s)
-    elif opt in ('-m', '--margin'):
-        m = arg
-        editDefaultProgramParameterValue('m', m)
-    elif opt in ('-t', '--threads'):
-        t = arg
-        editDefaultProgramParameterValue('t', t)
+    for opt, arg in opts:
+        if opt == '-h':
+            print('shrink-playlist.py <inputfile> [-v <sounded speed>] [-s <silent speed>] [-m <margin>] [-t <number of threads>]')
+            sys.exit()
+        elif opt in ('-v', '--sounded_speed'):
+            v = arg
+        elif opt in ('-s', '--silent_speed'):
+            s = arg
+        elif opt in ('-m', '--margin'):
+            m = arg
+        elif opt in ('-t', '--threads'):
+            t = arg
+else:
+    l = input(f'YouTube video/playlist link: ')
+
+    temp = input(f'Video speen when with sound (ENTER to default = {v}x): ')
+    v = temp if temp != '' else v
+
+    temp = input(f'Video speen when silence (ENTER to default = {s}x): ')
+    s = temp if temp != '' else s
+
+    temp = input(f'Silence parts margins (ENTER to default = {m} frames): ')
+    m = temp if temp != '' else m
+
+    temp = input(f'Number of threads (ENTER to default = {t} threads): ')
+    t = temp if temp != '' else t
 
 arguments = f'-v {v} -s {s} -m {m}'
+save('config', (o, v, s, m, t))
 
 if 'playlist?' not in l:
     if os.path.exists(o+'temp/'):
