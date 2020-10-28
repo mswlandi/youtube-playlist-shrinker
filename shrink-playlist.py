@@ -82,10 +82,10 @@ if len(parameters) > 0:
 else:
     l = input(f'YouTube video/playlist link: ')
 
-    temp = input(f'Video speen when with sound (ENTER to default = {v}x): ')
+    temp = input(f'Video speed when with sound (ENTER to default = {v}x): ')
     v = temp if temp != '' else v
 
-    temp = input(f'Video speen when silence (ENTER to default = {s}x): ')
+    temp = input(f'Video speed when silence (ENTER to default = {s}x): ')
     s = temp if temp != '' else s
 
     temp = input(f'Silence parts margins (ENTER to default = {m} frames): ')
