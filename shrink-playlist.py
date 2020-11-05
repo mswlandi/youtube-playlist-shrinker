@@ -1,6 +1,7 @@
 from pytube import Playlist, YouTube
 import re
 import os
+import shutil
 import sys, getopt
 import subprocess
 import threading
@@ -22,7 +23,7 @@ def save(filename, data):
 
 def askForOverwrite(file):
     while True:
-        command = input(f'Overwrite file {video}? (Y/N)\n')
+        command = input(f'Overwrite file {file}? (Y/N)\n')
         if command.lower() in ['y','yes']:
             return True
         elif command.lower() in ['n','no']:
@@ -80,7 +81,7 @@ if len(parameters) > 0:
         elif opt in ('-t', '--threads'):
             t = arg
 else:
-    l = input(f'YouTube video/playlist link: ')
+    l = input(f'YouTube video/playlist link or Local video/folder path (you can drag it here): ')
 
     temp = input(f'Video speed when with sound (ENTER to default = {v}x): ')
     v = temp if temp != '' else v
@@ -94,10 +95,47 @@ else:
     temp = input(f'Number of threads (ENTER to default = {t} threads): ')
     t = temp if temp != '' else t
 
+l = l.strip('\"')
 arguments = f'-v {v} -s {s} -m {m}'
 save('config', (o, v, s, m, t))
 
-if 'playlist?' not in l:
+def runAsYouTubePlaylist():
+    global o, v, s, m, t, l, arguments
+    playlist = Playlist(l)
+
+    # YouTube updated their HTML so the regex that Playlist uses to find the videos is currently outdated
+    playlist._video_regex = re.compile(r'\"url\":\"(/watch\?v=[\w-]*)')
+
+    if not os.path.exists(f'{o}'):
+        os.makedirs(f'{o}')
+
+    print(f'\nDownloading {len(playlist.video_urls)} videos from {playlist.title()}:\n')
+
+    for index in range(0, len(playlist.video_urls), int(t)):
+        threads = []
+        videoURLs = '\n'.join(playlist.video_urls[index:index+int(t)])
+        print(f'\nDownloading: \n{videoURLs}\n')
+        for videoURL in playlist.video_urls[index:index+int(t)]:
+            threads.append(threading.Thread(target=downloadVideo, args=(f'{o}/{playlist.title()}', videoURL)))
+            threads[-1].start()
+        for thread in threads:
+            thread.join()
+
+    o += sorted([p for p in os.listdir(f'{o}') if os.path.isdir(o+p) and isFirstSubsetOfSecond(p, playlist.title())], key=lambda p: -len(p))[0]
+
+    videos = os.listdir(f'{o}')
+    for index in range(0, len(videos), int(t)):
+        threads = []
+        videoNames = '\n'.join(['.'.join(video.split('.')[:-1]) for video in videos[index:index+int(t)]])
+        print(f'\nShrinking: \n{videoNames}\n')
+        for video in videos[index:index+int(t)]:
+            threads.append(threading.Thread(target=shrinkVideo, args=(o, video, arguments, int(t) != 1)))
+            threads[-1].start()
+        for thread in threads:
+            thread.join()
+
+def runAsYouTubeVideo():
+    global o, v, s, m, t, l, arguments
     if os.path.exists(o+'temp/'):
         for video in os.listdir(o+'temp/'):
             os.remove(o+'temp/'+video)
@@ -120,37 +158,27 @@ if 'playlist?' not in l:
     videoName = '.'.join(video.split('.')[:-1])
     print(f'\nShrinking: \n{videoName}\n')
     shrinkVideo(o, video, arguments, False)
-    sys.exit(0)
 
-playlist = Playlist(l)
+def runAsLocalFolder():
+    global o, v, s, m, t, l, arguments
+    print('Local folders not yet supported')
+    raise NotImplementedError()
 
-# YouTube updated their HTML so the regex that Playlist uses to find the videos is currently outdated
-playlist._video_regex = re.compile(r'\"url\":\"(/watch\?v=[\w-]*)')
+def runAsLocalVideo():
+    global o, v, s, m, t, l, arguments
+    video = l.split('/')[-1].split('\\')[-1]
+    shutil.copy(l, o + video)
+    videoName = '.'.join(video.split('.')[:-1])
+    print(f'\nShrinking: \n{videoName}\n')
+    shrinkVideo(o, video, arguments, False)
 
-if not os.path.exists(f'{o}'):
-    os.makedirs(f'{o}')
-
-print(f'\nDownloading {len(playlist.video_urls)} videos from {playlist.title()}:\n')
-
-for index in range(0, len(playlist.video_urls), int(t)):
-    threads = []
-    videoURLs = '\n'.join(playlist.video_urls[index:index+int(t)])
-    print(f'\nDownloading: \n{videoURLs}\n')
-    for videoURL in playlist.video_urls[index:index+int(t)]:
-        threads.append(threading.Thread(target=downloadVideo, args=(f'{o}/{playlist.title()}', videoURL)))
-        threads[-1].start()
-    for thread in threads:
-        thread.join()
-
-o += sorted([p for p in os.listdir(f'{o}') if os.path.isdir(o+p) and isFirstSubsetOfSecond(p, playlist.title())], key=lambda p: -len(p))[0]
-
-videos = os.listdir(f'{o}')
-for index in range(0, len(videos), int(t)):
-    threads = []
-    videoNames = '\n'.join(['.'.join(video.split('.')[:-1]) for video in videos[index:index+int(t)]])
-    print(f'\nShrinking: \n{videoNames}\n')
-    for video in videos[index:index+int(t)]:
-        threads.append(threading.Thread(target=shrinkVideo, args=(o, video, arguments, int(t) != 1)))
-        threads[-1].start()
-    for thread in threads:
-        thread.join()
+if 'youtube.com' in l or 'youtu.be' in l:
+    if 'playlist?' in l:
+        runAsYouTubePlaylist()
+    else:
+        runAsYouTubeVideo()
+else:
+    if '.' in l.split('/')[-1].split('\\')[-1]:
+        runAsLocalVideo()
+    else:
+        runAsLocalFolder()
