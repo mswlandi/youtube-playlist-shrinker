@@ -109,19 +109,19 @@ def runAsYouTubePlaylist():
     if not os.path.exists(f'{o}'):
         os.makedirs(f'{o}')
 
-    print(f'\nDownloading {len(playlist.video_urls)} videos from {playlist.title()}:\n')
+    print(f'\nDownloading {len(playlist.video_urls)} videos from {playlist.title}:\n')
 
     for index in range(0, len(playlist.video_urls), int(t)):
         threads = []
         videoURLs = '\n'.join(playlist.video_urls[index:index+int(t)])
         print(f'\nDownloading: \n{videoURLs}\n')
         for videoURL in playlist.video_urls[index:index+int(t)]:
-            threads.append(threading.Thread(target=downloadVideo, args=(f'{o}/{playlist.title()}', videoURL)))
+            threads.append(threading.Thread(target=downloadVideo, args=(f'{o}/{playlist.title}', videoURL)))
             threads[-1].start()
         for thread in threads:
             thread.join()
 
-    o += sorted([p for p in os.listdir(f'{o}') if os.path.isdir(o+p) and isFirstSubsetOfSecond(p, playlist.title())], key=lambda p: -len(p))[0]
+    o += sorted([p for p in os.listdir(f'{o}') if os.path.isdir(o+p) and isFirstSubsetOfSecond(p, playlist.title)], key=lambda p: -len(p))[0]
 
     videos = os.listdir(f'{o}')
     for index in range(0, len(videos), int(t)):
