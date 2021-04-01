@@ -111,7 +111,6 @@ def process_youtube_video(url_or_path):
 
     download_folder = output_temp_folder
     download_video(download_folder, url_or_path)
-    video_name_with_extension = os.listdir(download_folder)[0]
     processes_local_playlist(download_folder)
 
     shutil.rmtree(output_temp_folder)
