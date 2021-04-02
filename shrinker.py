@@ -29,7 +29,7 @@ def run_thread(function_to_run, function_to_run_args, threads_semaphore: Semapho
 
 def ask_for_overwrite(file):
     while True:
-        command = input(f'Overwrite file {file}? (Y/N)\n')
+        command = input(f'\nOverwrite file {file}? (Y/N)\n')
         if command.lower() in ['y','yes']:
             return True
         elif command.lower() in ['n','no']:
@@ -44,104 +44,120 @@ def reset_temp_folder(output_folder):
     os.makedirs(output_temp_folder)
     return output_temp_folder
 
-def is_first_subset_of_second(first, second):
-    position_in_first = 0
-    for letter in second:
-        if letter == first[position_in_first]:
-            position_in_first += 1
-    return position_in_first == len(first)
-
-def download_video(download_folder, video_url):
-    print(f'\nDownloading: \n{video_url}\n')
+def download_youtube_video(download_folder, youtube_video):
+    print(f'\nDownloading \"{youtube_video.title}\"...')
     while True:
         try:
-            video = YouTube(video_url)
-            video.streams.get_highest_resolution().download(download_folder)
+            youtube_video.streams.get_highest_resolution().download(download_folder)
             break
         except:
             continue
-    print(f'\nDownloaded: \n{video_url}\n')
+    print(f'\nDownloaded \"{youtube_video.title}\".')
 
-def shrink_video(video_name_with_extension, muted):
-    global output_folder, arguments
+def shrink_video(source_path, output_path, muted, mode): # Mode may be "remove source or override others files", "remove source but not override other files" or "neither remove source nor override other files"
+    global arguments
 
-    video_name = '.'.join(video_name_with_extension.split('.')[:-1])
-    output_path = join_path(output_folder, video_name_with_extension)
-    output_temp_path = join_path(output_folder, '_' + video_name_with_extension)
-    print(f'\nShrinking: \n{video_name}\n')
+    source_folder, video_source_name_with_extension = split_path(source_path)
+    video_source_name = '.'.join(video_source_name_with_extension.split('.')[:-1])
+    print(f'\nShrinking \"{video_source_name}\"...')
+
+    if os.path.relpath(source_path, output_path) == '.': # If the source_path and the output_path are the same...
+        if mode in ['neither remove source nor override other files'] and not ask_for_overwrite(source_path):
+            print(f'\nFailed to shrink \"{video_source_name}\".')
+            return
+        new_source_path = join_path(source_folder, '_' + video_source_name_with_extension)
+        if exists_path(new_source_path):
+            if mode in ['remove source but not override other files', 'neither remove source nor override other files'] and not ask_for_overwrite(new_source_path):
+                print(f'\nFailed to shrink \"{video_source_name}\".')
+                return
+            os.remove(new_source_path)
+        os.rename(source_path, new_source_path)
+        source_path = new_source_path
+        mode = 'remove source but not override other files'
+
+    if exists_path(output_path):
+        if mode in ['remove source but not override other files', 'neither remove source nor override other files'] and not ask_for_overwrite(output_path):
+            print(f'\nFailed to shrink \"{video_source_name}\".')
+            return
+        os.remove(output_path)
+
     if muted:
-        subprocess.run(f'auto-editor "{output_path}" {arguments} --no_open -o "{output_temp_path}"', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.run(f'auto-editor "{source_path}" {arguments} --no_open -o "{output_path}"', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     else:
-        subprocess.run(f'auto-editor "{output_path}" {arguments} --no_open -o "{output_temp_path}"')
-    os.remove(f'{output_path}')
-    os.rename(f'{output_temp_path}', f'{output_path}')
-    print(f'\nShrinked: \n{video_name}\n')
+        subprocess.run(f'auto-editor "{source_path}" {arguments} --no_open -o "{output_path}"')
 
-def process_youTube_playlist(url_or_path):
+    if mode in ['remove or override', 'remove but not override']:
+        os.remove(source_path)
+        if len(os.listdir(source_folder)) == 0:
+            os.rmdir(source_folder)
+
+    print(f'\nShrinked \"{video_source_name}\".')
+
+def process_youTube_playlist(youtube_playlist_url):
     global output_folder, number_of_threads
 
-    playlist = Playlist(url_or_path)
+    youtube_playlist = Playlist(youtube_playlist_url)
 
     # YouTube updated their HTML so the regex that Playlist uses to find the videos is currently outdated
-    playlist._video_regex = re.compile(r'\"url\":\"(/watch\?v=[\w-]*)')
+    youtube_playlist._video_regex = re.compile(r'\"url\":\"(/watch\?v=[\w-]*)')
 
     if not exists_path(f'{output_folder}'):
         os.makedirs(f'{output_folder}')
 
-    download_folder = join_path(output_folder, playlist.title)
+    download_folder = join_path(output_folder, youtube_playlist.title)
+    if exists_path(download_folder):
+        input(f'\nDownload output folder \"{download_folder}\" already exists.\n - To avoid conflicts of re-shrinking or overriding files, please close the program or rename the existing folder before continuing.\n - If you want to continue without closing, press enter.')
 
-    print(f'\nDownloading {len(playlist.video_urls)} videos from {playlist.title} (YouTube playlist) in {download_folder}\n')
+    print(f'\nDownloading {len(youtube_playlist.video_urls)} videos from \"{youtube_playlist.title}\" (YouTube playlist) in \"{download_folder}\".')
 
     threads = []
     threads_semaphore = Semaphore(number_of_threads)
-    for video_url in playlist.video_urls:
-        threads.append(Thread(target=run_thread, args=(download_video, (download_folder, video_url), threads_semaphore)))
+    for youtube_video_url in youtube_playlist.video_urls:
+        youtube_video = YouTube(youtube_video_url)
+        threads.append(Thread(target=run_thread, args=(download_youtube_video, (download_folder, youtube_video), threads_semaphore)))
         threads[-1].start()
     for thread in threads:
         thread.join()
 
     output_folder = download_folder
 
-    processes_local_playlist(download_folder)
+    processes_local_playlist(download_folder, True, 'remove source but not override other files')
 
-def process_youtube_video(url_or_path):
+def process_youtube_video(youtube_video_url):
     global output_folder
 
     output_temp_folder = reset_temp_folder(output_folder)
 
     download_folder = output_temp_folder
-    download_video(download_folder, url_or_path)
-    processes_local_playlist(download_folder)
+    youtube_video = YouTube(youtube_video_url)
+    download_youtube_video(download_folder, youtube_video)
+    processes_local_playlist(download_folder, True, 'remove source but not override other files')
 
-    shutil.rmtree(output_temp_folder)
-
-def processes_local_playlist(url_or_path, muted=False):
+def processes_local_playlist(source_path, muted=False, mode='neither remove source nor override other files'):
     global number_of_threads
 
-    folder_filenames = list(os.listdir(url_or_path))
+    folder_filenames = list(os.listdir(source_path))
 
     if not muted:
-        print(f'\nObtaining {len(folder_filenames)} videos from {url_or_path} in {output_folder}\n')
-        print('\n'.join(folder_filenames))
+        print(f'\nObtaining {len(folder_filenames)} videos from \"{source_path}\" in \"{output_folder}\".')
+        for filename in folder_filenames:
+            print(filename)
 
     threads = []
     threads_semaphore = Semaphore(number_of_threads)
     for filename in folder_filenames:
-        threads.append(Thread(target=run_thread, args=(process_local_video, (join_path(url_or_path, filename), min(number_of_threads, len(folder_filenames)) <= 1), threads_semaphore)))
+        threads.append(Thread(target=run_thread, args=(process_local_video, (join_path(source_path, filename), min(number_of_threads, len(folder_filenames)) > 1, mode), threads_semaphore)))
         threads[-1].start()
     for thread in threads:
         thread.join()
 
-def process_local_video(url_or_path, muted=False):
+def process_local_video(source_path, muted=False, mode='neither remove source nor override other files'):
     global output_folder
 
-    video_name_with_extension = split_path(url_or_path)[1]
+    video_name_with_extension = split_path(source_path)[1]
     output_path = join_path(output_folder, video_name_with_extension)
 
-    if exists_path(output_path):
-        if ask_for_overwrite(video_name_with_extension):
-            shutil.copy(url_or_path, output_path)
-            shrink_video(video_name_with_extension, muted)
+    shrink_video(source_path, output_path, muted, mode)
 
 
 if __name__ == '__main__':
