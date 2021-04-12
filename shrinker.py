@@ -84,9 +84,10 @@ def shrink_video(source_path, output_path, muted, mode): # Mode may be "remove s
     if muted:
         subprocess.run(f'auto-editor "{source_path}" {arguments} --no_open -o "{output_path}"', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     else:
+        print(f'auto-editor "{source_path}" {arguments} --no_open -o "{output_path}"')
         subprocess.run(f'auto-editor "{source_path}" {arguments} --no_open -o "{output_path}"')
 
-    if mode in ['remove or override', 'remove but not override']:
+    if mode in ['remove source or override others files', 'remove source but not override other files']:
         os.remove(source_path)
         if len(os.listdir(source_folder)) == 0:
             os.rmdir(source_folder)
