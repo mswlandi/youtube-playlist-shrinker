@@ -71,7 +71,7 @@ def shrink_video(source_path, output_path, muted, mode): # Mode may be "remove s
                 print(f'\nFailed to shrink \"{video_source_name}\".')
                 return
             os.remove(new_source_path)
-        os.rename(source_path, new_source_path)
+        shutil.move(source_path, new_source_path)
         source_path = new_source_path
         mode = 'remove source but not override other files'
 
