@@ -169,7 +169,7 @@ if __name__ == '__main__':
     parameters = sys.argv[1:]
 
     if len(parameters) > 0:
-        url_or_path = parameters[0]
+        url_or_paths = parameters[0]
         try:
             opts, args = getopt.getopt(parameters[1:],'hv:s:m:t:',['sounded_speed=', 'silent_speed=', 'margin=', 'threads='])
         except:
@@ -189,7 +189,7 @@ if __name__ == '__main__':
             elif opt in ('-t', '--threads'):
                 number_of_threads = arg
     else:
-        url_or_path = input(f'YouTube video/playlist link or Local video/folder path (you can drag it here): ')
+        url_or_paths = input(f'YouTube video/playlist link or Local video/folder path (you can drag it here): ')
 
         temp = input(f'Video speed when with sound (ENTER to default = {sounded_video_speed}x): ')
         sounded_video_speed = temp if temp != '' else sounded_video_speed
@@ -203,19 +203,20 @@ if __name__ == '__main__':
         temp = input(f'Number of threads (ENTER to default = {number_of_threads} threads): ')
         number_of_threads = temp if temp != '' else number_of_threads
 
-    url_or_path = url_or_path.strip('\"')
-    number_of_threads = int(number_of_threads)
+    for url_or_path in url_or_paths.split(','):
+        url_or_path = url_or_path.strip('\"')
+        number_of_threads = int(number_of_threads)
 
-    arguments = f'-v {sounded_video_speed} -s {muted_video_speed} -m {margin_size}'
-    save('config', (output_folder, sounded_video_speed, muted_video_speed, margin_size, number_of_threads))
+        arguments = f'-v {sounded_video_speed} -s {muted_video_speed} -m {margin_size}'
+        save('config', (output_folder, sounded_video_speed, muted_video_speed, margin_size, number_of_threads))
 
-    if 'youtube.com' in url_or_path or 'youtu.be' in url_or_path:
-        if 'playlist?' in url_or_path:
-            process_youTube_playlist(url_or_path)
+        if 'youtube.com' in url_or_path or 'youtu.be' in url_or_path:
+            if 'playlist?' in url_or_path:
+                process_youTube_playlist(url_or_path)
+            else:
+                process_youtube_video(url_or_path)
         else:
-            process_youtube_video(url_or_path)
-    else:
-        if '.' in split_path(url_or_path)[1]:
-            process_local_video(url_or_path)
-        else:
-            processes_local_playlist(url_or_path)
+            if '.' in split_path(url_or_path)[1]:
+                process_local_video(url_or_path)
+            else:
+                processes_local_playlist(url_or_path)
