@@ -61,19 +61,22 @@ def shrink_video(source_path, output_path, muted, mode): # Mode may be "remove s
     video_source_name = '.'.join(video_source_name_with_extension.split('.')[:-1])
     print(f'\nShrinking \"{video_source_name}\"...')
 
-    if os.path.relpath(source_path, output_path) == '.': # If the source_path and the output_path are the same...
-        if mode in ['neither remove source nor override other files'] and not ask_for_overwrite(source_path):
-            print(f'\nFailed to shrink \"{video_source_name}\".')
-            return
-        new_source_path = join_path(source_folder, '_' + video_source_name_with_extension)
-        if exists_path(new_source_path):
-            if mode in ['remove source but not override other files', 'neither remove source nor override other files'] and not ask_for_overwrite(new_source_path):
+    try:
+        if os.path.relpath(source_path, output_path) == '.': # If the source_path and the output_path are the same...
+            if mode in ['neither remove source nor override other files'] and not ask_for_overwrite(source_path):
                 print(f'\nFailed to shrink \"{video_source_name}\".')
                 return
-            os.remove(new_source_path)
-        shutil.move(source_path, new_source_path)
-        source_path = new_source_path
-        mode = 'remove source but not override other files'
+            new_source_path = join_path(source_folder, '_' + video_source_name_with_extension)
+            if exists_path(new_source_path):
+                if mode in ['remove source but not override other files', 'neither remove source nor override other files'] and not ask_for_overwrite(new_source_path):
+                    print(f'\nFailed to shrink \"{video_source_name}\".')
+                    return
+                os.remove(new_source_path)
+            shutil.move(source_path, new_source_path)
+            source_path = new_source_path
+            mode = 'remove source but not override other files'
+    except ValueError:
+        pass # If files on different partitions, this error will occur.
 
     if exists_path(output_path):
         if mode in ['remove source but not override other files', 'neither remove source nor override other files'] and not ask_for_overwrite(output_path):
